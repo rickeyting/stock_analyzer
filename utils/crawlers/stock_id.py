@@ -45,7 +45,15 @@ def update_stock_id(driver, db_dir, hide=True):
             result.append(table)
         result = pd.concat(result)
         db = database(db_dir)
-        db.insert_data(result, 'stock_id')
+        db_stock_id = db.get_stock_id()
+        print('Current numbers of stock_id: {}'.format(len(result)))
+        print('Exist numbers of stock_id: {}'.format(len(db_stock_id)))
+        if len(result) != len(db_stock_id):
+            print('Update stock list')
+            db.insert_data(result, 'stock_id')
+        else:
+            print('Stock list unchanged')
+        
         #result.to_csv(save_path, encoding='utf-8-sig',index=False)
 
 
