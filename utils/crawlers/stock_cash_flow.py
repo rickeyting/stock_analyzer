@@ -13,9 +13,9 @@ from ..sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\TEST.csv'
-db_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\database.db'
+db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
 
-def run_crawler(driver, stock_id_list, hide=False):
+def run_crawler(driver, stock_id_list, db_dir, hide=False):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')
@@ -24,9 +24,14 @@ def run_crawler(driver, stock_id_list, hide=False):
     chrome = webdriver.Chrome(executable_path=driver, options=options)
     ans = []
     year_q = get_y_q()
+    db = database(db_dir)
     for i in tqdm(stock_id_list[1350:]):
         for j in year_q:
-            TaiwanStockCashFlows(chrome, i, j)
+            df = TaiwanStockCashFlows(chrome, i, j)
+            if df:
+                db.insert_data(df, 'CashFlows')
+                df = False
+            
 
     chrome.close()
     chrome.quit()
@@ -58,7 +63,7 @@ def TaiwanStockCashFlows(browser, stock_id, y_q):
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
                 if '查無所需資料' in status or '第二上市' in status:
-                    return np.nan
+                    return False
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
@@ -95,12 +100,15 @@ def TaiwanStockBalance(browser, stock_id, y_q):
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
                 if '查無所需資料' in status or '第二上市' in status:
-                    return np.nan
+                    return False
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
             table = pd.read_html(str(div))
-            table = table[1]
+            if len(table[1].columns) > 2:
+                table = table[1]
+            else:
+                table = table[2]
             table = table.iloc[:, 0:2]
             table.columns = ['elements', 'values']
             table['year'] = y_q[0]
@@ -128,13 +136,16 @@ def TaiwanStockFinancial(browser, stock_id, y_q):
                 time.sleep(2)
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
-                if '查無所需資料' in status:
-                    return np.nan
+                if '查無所需資料' in status or '第二上市' in status:
+                    return False
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
             table = pd.read_html(str(div))
-            table = table[1]
+            if len(table[1].columns) > 2:
+                table = table[1]
+            else:
+                table = table[2]
             table = table.iloc[:, 0:2]
             table.columns = ['elements', 'values']
             table['year'] = y_q[0]
@@ -165,4 +176,4 @@ if __name__ == '__main__':
     stock_id = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\stock_id.csv'
     df = pd.read_csv(stock_id)
     stock_id = df.stock_id.tolist()
-    run_crawler(driver ,stock_id ,False)
+    run_crawler(driver ,stock_id ,db_dir,False)
