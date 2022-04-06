@@ -3,7 +3,7 @@ import os
 from sqlite3 import Error
 import pandas as pd
 root = os.path.abspath('..')
-db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
+db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas.db'
 
 class database():
     def __init__(self,db_dir):
@@ -30,7 +30,7 @@ class database():
     def undo(self, table_name, condition, where=''):
         where += 'WHERE '
         for i in condition:
-            where += str(i[0])+' = '+str(i[1])
+            where += str(i[0])+' = "'+str(i[1])+'"'
             if condition.index(i) == len(condition)-1:
                 pass
             else:
@@ -67,5 +67,7 @@ if __name__ == '__main__':
     db = database(db_dir)
     #db.create_table('stock_id')
     #db.insert_data(df, 'stock_id')
-    db.table_check('stock_id')
+    #db.table_check('stock_id')
     #print(db.check('stock_id', 'stock_id', 1101))
+    print(db.undo('banks_holder', [['date', "2022-04-06"], ['stock_id', "1101"]]))
+
