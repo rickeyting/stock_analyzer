@@ -8,7 +8,7 @@ from utils.sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\data\stock_id.csv'
-
+db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
 
 def exist_path(browser, xpath):
     try:
@@ -18,7 +18,7 @@ def exist_path(browser, xpath):
         return False
 
 
-def update_stock_id(driver, save_path, hide=True):
+def update_stock_id(driver, db_dir, hide=True):
     url = 'https://mops.twse.com.tw/mops/web/t51sb01'
     stock_status_xpath = '//*[@id="search"]/table/tbody/tr/td/select[1]'
     stokc_types = '//*[@id="search"]/table/tbody/tr/td/select[2]'
@@ -44,10 +44,10 @@ def update_stock_id(driver, save_path, hide=True):
             table = table[table['公司名稱'] != '公司名稱']
             result.append(table)
         result = pd.concat(result)
-        db = database()
+        db = database(db_dir)
         db.insert_data(result, 'stock_id')
-        result.to_csv(save_path, encoding='utf-8-sig',index=False)
+        #result.to_csv(save_path, encoding='utf-8-sig',index=False)
 
 
 if __name__ == '__main__':
-    update_stock_id(driver, save_path)
+    update_stock_id(driver, db_dir)
