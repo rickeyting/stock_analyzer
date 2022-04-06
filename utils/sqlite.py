@@ -5,8 +5,8 @@ import pandas as pd
 root = os.path.abspath('..')
 
 class database():
-    def __init__(self):
-        self.db_path = os.path.join(root, 'raw_datas.db')
+    def __init__(self,db_dir):
+        self.db_path = db_dir
         self.con = sqlite3.connect(self.db_path)
         self.obj = self.con.cursor()
 
