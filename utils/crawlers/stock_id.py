@@ -35,7 +35,7 @@ def update_stock_id(driver, db_dir, hide=True):
             Select(browser.find_element(By.XPATH, value=stock_status_xpath)).select_by_visible_text(status)
             Select(browser.find_element(By.XPATH, value=stokc_types)).select_by_visible_text('') #select empty = all
             browser.find_element(by=By.XPATH, value='//*[@id="search_bar1"]/div/input').click()
-            time.sleep(10)
+            time.sleep(15)
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
@@ -44,16 +44,21 @@ def update_stock_id(driver, db_dir, hide=True):
             table = table[table['公司名稱'] != '公司名稱']
             result.append(table)
         result = pd.concat(result)
+        result = result.rename(columns={"公司代號": "stock_id"})
         db = database(db_dir)
-        db_stock_id = db.get_stock_id()
-        print('Current numbers of stock_id: {}'.format(len(result)))
-        print('Exist numbers of stock_id: {}'.format(len(db_stock_id)))
-        if len(result) != len(db_stock_id):
-            print('Update stock list')
-            db.insert_data(result, 'stock_id')
+        if db.table_check('stock_id'):
+            db_stock_id = db.get_stock_id()
+            print('Current numbers of stock_id: {}'.format(len(result)))
+            print('Exist numbers of stock_id: {}'.format(len(db_stock_id)))
+            if len(result) != len(db_stock_id):
+                print('Update stock list')
+                db.insert_data(result, 'stock_id')
+            else:
+                print('Stock list unchanged')
         else:
-            print('Stock list unchanged')
-        
+            db.insert_data(result, 'stock_id')
+    browser.close()
+    browser.quit()
         #result.to_csv(save_path, encoding='utf-8-sig',index=False)
 
 

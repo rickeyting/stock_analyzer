@@ -9,7 +9,7 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-from ..sqlite import database
+from utils.sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
@@ -27,21 +27,18 @@ def run_crawler(driver, db_dir, hide=False):
     stock_id_list = db.get_stock_id()
     for i in tqdm(stock_id_list):
         for j in year_q:
-            if db.undo('CashFlows',[['year',j[0]],['quarter',j[1]]]):
+            if db.undo('CashFlows', [['year', j[0]], ['quarter', j[1]], ['stock_id', i]]):
                 df = TaiwanStockCashFlows(chrome, i, j)
-                if df:
+                if not df.empty:
                     db.insert_data(df, 'CashFlows')
-                    df = False
-            if db.undo('Balance',[['year',j[0]],['quarter',j[1]]]):
+            if db.undo('Balance', [['year', j[0]], ['quarter', j[1]], ['stock_id', i]]):
                 df = TaiwanStockBalance(chrome, i, j)
-                if df:
+                if not df.empty:
                     db.insert_data(df, 'Balance')
-                    df = False
-            if db.undo('Financial',[['year',j[0]],['quarter',j[1]]]):
+            if db.undo('Financial', [['year', j[0]], ['quarter', j[1]], ['stock_id', i]]):
                 df = TaiwanStockFinancial(chrome, i, j)
-                if df:
+                if not df.empty:
                     db.insert_data(df, 'Financial')
-                    df = False
     chrome.close()
     chrome.quit()
     return ans
@@ -72,11 +69,12 @@ def TaiwanStockCashFlows(browser, stock_id, y_q):
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
                 if '查無所需資料' in status or '第二上市' in status:
-                    return False
+                    return pd.DataFrame()
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
             table = pd.read_html(str(div))
+
             if len(table[1].columns) > 2:
                 table = table[1]
             else:
@@ -109,7 +107,7 @@ def TaiwanStockBalance(browser, stock_id, y_q):
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
                 if '查無所需資料' in status or '第二上市' in status:
-                    return False
+                    return pd.DataFrame()
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")
@@ -146,7 +144,7 @@ def TaiwanStockFinancial(browser, stock_id, y_q):
             if xpath_exist(browser, '//*[@id="table01"]/center/h4/font') == True:
                 status = browser.find_element(By.XPATH, value='//*[@id="table01"]/center/h4/font').text
                 if '查無所需資料' in status or '第二上市' in status:
-                    return False
+                    return pd.DataFrame()
             html = browser.page_source
             soup = BeautifulSoup(html, 'html.parser')
             div = soup.select_one("div#table01")

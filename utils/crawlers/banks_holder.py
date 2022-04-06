@@ -1,25 +1,16 @@
 import os
 import time
 import base64
-from glob import glob
+import glob
+import pytesseract
 
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 import cv2
-import pytesseract
 from selenium import webdriver
 from datetime import datetime, timedelta
-from ..sqlite import database
-
-BASE_DIR = os.path.abspath('.')
-LOCAL_DEALER_DIR = 'stock_local_dealer'
-DATA_DIR = os.path.join(BASE_DIR, LOCAL_DEALER_DIR)
-
-COMPANY_LIST_FILENAME = 'company_list.csv'
-STOCK_ID_LIST = pd.read_csv(os.path.join(BASE_DIR, COMPANY_LIST_FILENAME)).stock_id.tolist()
-# STOCK_ID_LIST = [3481]
-CHROME_DRIVER = os.path.join(BASE_DIR, 'chromedriver.exe')
+from utils.sqlite import database
 
 
 def preprocess(image_gray):
@@ -27,7 +18,6 @@ def preprocess(image_gray):
     image_opening = cv2.morphologyEx(image_gray, cv2.MORPH_OPEN, kernel, iterations=1)
     image_blur = cv2.GaussianBlur(image_opening, (5, 5), 0)
     _, image_thresh = cv2.threshold(image_blur, 180, 255, cv2.THRESH_BINARY)
-
     num_components, components, stats, _ = cv2.connectedComponentsWithStats(image_thresh,
                                                                             None, None, None, 4, cv2.CV_32S)
     sizes = stats[:, -1]
@@ -87,6 +77,7 @@ def get_captcha_text(browser):
     image_array = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(image_array, flags=cv2.IMREAD_GRAYSCALE)
     image = preprocess(image)
+    time.sleep(60)
     text = image_to_string(image)
     return text
 
@@ -153,26 +144,25 @@ def get_data(browser, stock_id):
     table_stock_id = browser.find_element_by_id("stock_id").text[:4]
     data['date'] = table_date
     data['stock_id'] = table_stock_id
-    return data
+    return data, table_date
 
 
-def run_crawler(save_dir, stock_id_list):
+def run_crawler(driver, db_dir, hide=True):
     options = webdriver.ChromeOptions()
-    options.add_argument('headless')
-    options.add_argument("disable-gpu")
-    options.add_experimental_option('excludeSwitches', ['enable-automation'])
-    chrome = webdriver.Chrome(executable_path=CHROME_DRIVER, options=options)
-
+    if hide:
+        options.add_argument('headless')
+        options.add_argument("disable-gpu")
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    chrome = webdriver.Chrome(executable_path=driver, options=options)
+    db = database(db_dir)
+    stock_id_list = db.get_stock_id()
     for i in range(len(stock_id_list)):
         code = stock_id_list[i]
         print("{} Download stock id {} data ({}/{})".format(current_time(), code, i + 1, len(stock_id_list)))
-        save_path = os.path.join(save_dir, '{}.csv'.format(code))
-        if os.path.exists(save_path):
-            continue
-        df = get_data(chrome, code)
-        if not df.empty:
-            print('{} Data save at {}'.format(current_time(), save_path))
-            df.to_csv(save_path, index=False, encoding="utf8")
+        df, table_date = get_data(chrome, code)
+        if not df.empty and db.undo('banks_holder', [['date', table_date], ['stock_id', code]]):
+            print('{} Data save at {}'.format(current_time(), code))
+            db.insert_data(df, 'banks_holder')
         else:
             print('{} No data found, invalid stock id.'.format(current_time()))
         time.sleep(1)
@@ -200,6 +190,9 @@ def check_data(save_dir, stock_id_list):
             wrong_data.append(code)
             continue
     return len(wrong_data) == 0, wrong_data
+
+
+
 
 
 if __name__ == '__main__':
