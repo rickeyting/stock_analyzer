@@ -28,14 +28,39 @@ class database():
         except Exception as e:
             print(e)
     
+    def undo(self, table_name, condition):
+        where += 'WHERE '
+        for i in condition:
+            print(i)
+            where += str(i[0])+' = '+str(i[1])
+            if condition.index(i) == len(condition)-1:
+                pass
+            else:
+                where += ' AND '
+        if table_check(table_name):
+            self.obj.execute("SELECT * FROM {} {}".format(table_name, where))
+            if self.obj.fetchone():
+                return False
+            else:
+                return True
+        else:
+            return True
+    
     def get_stock_id(self):
         self.obj.execute("SELECT stock_id FROM stock_id")
         return list(self.obj.fetchall())
+    
+    def table_check(self, table_name):
+        self.obj.execute("SHOW TABLES LIKE {}".format(table_name))
+        if self.obj.fetchone():
+            return True
+        else:
+            return False
 
-
-#save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\stock_id.csv'
-#df = pd.read_csv(save_path)
-db = database()
-#db.create_table('stock_id')
-#db.insert_data(df, 'stock_id')
-print(db.check('stock_id', 'stock_id', 1101))
+if __name__ == '__main__':
+    #save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\stock_id.csv'
+    #df = pd.read_csv(save_path)
+    db = database()
+    #db.create_table('stock_id')
+    #db.insert_data(df, 'stock_id')
+    print(db.check('stock_id', 'stock_id', 1101))
