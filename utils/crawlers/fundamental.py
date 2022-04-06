@@ -27,18 +27,21 @@ def run_crawler(driver, db_dir, hide=False):
     stock_id_list = db.get_stock_id()
     for i in tqdm(stock_id_list):
         for j in year_q:
-            df = TaiwanStockCashFlows(chrome, i, j)
-            if df:
-                db.insert_data(df, 'CashFlows')
-                df = False
-            df = TaiwanStockBalance(chrome, i, j)
-            if df:
-                db.insert_data(df, 'Balance')
-                df = False
-            df = TaiwanStockFinancial(chrome, i, j)
-            if df:
-                db.insert_data(df, 'Financial')
-                df = False
+            if db.undo('CashFlows',[['year',j[0]],['quarter',j[1]]]):
+                df = TaiwanStockCashFlows(chrome, i, j)
+                if df:
+                    db.insert_data(df, 'CashFlows')
+                    df = False
+            if db.undo('Balance',[['year',j[0]],['quarter',j[1]]]):
+                df = TaiwanStockBalance(chrome, i, j)
+                if df:
+                    db.insert_data(df, 'Balance')
+                    df = False
+            if db.undo('Financial',[['year',j[0]],['quarter',j[1]]]):
+                df = TaiwanStockFinancial(chrome, i, j)
+                if df:
+                    db.insert_data(df, 'Financial')
+                    df = False
     chrome.close()
     chrome.quit()
     return ans
