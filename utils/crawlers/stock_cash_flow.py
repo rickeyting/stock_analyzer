@@ -12,10 +12,9 @@ from selenium.webdriver.support.select import Select
 from ..sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
-save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\TEST.csv'
 db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
 
-def run_crawler(driver, stock_id_list, db_dir, hide=False):
+def run_crawler(driver, db_dir, hide=False):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')
@@ -25,14 +24,21 @@ def run_crawler(driver, stock_id_list, db_dir, hide=False):
     ans = []
     year_q = get_y_q()
     db = database(db_dir)
-    for i in tqdm(stock_id_list[1350:]):
+    stock_id_list = db.get_stock_id()
+    for i in tqdm(stock_id_list):
         for j in year_q:
             df = TaiwanStockCashFlows(chrome, i, j)
             if df:
                 db.insert_data(df, 'CashFlows')
                 df = False
-            
-
+            df = TaiwanStockBalance(chrome, i, j)
+            if df:
+                db.insert_data(df, 'Balance')
+                df = False
+            df = TaiwanStockFinancial(chrome, i, j)
+            if df:
+                db.insert_data(df, 'Financial')
+                df = False
     chrome.close()
     chrome.quit()
     return ans
@@ -173,7 +179,4 @@ def get_y_q():
 
 
 if __name__ == '__main__':
-    stock_id = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\stock_id.csv'
-    df = pd.read_csv(stock_id)
-    stock_id = df.stock_id.tolist()
-    run_crawler(driver ,stock_id ,db_dir,False)
+    run_crawler(driver, db_dir, False)
