@@ -27,8 +27,10 @@ class database():
                 return False
         except Exception as e:
             print(e)
-
-    #def get_stock_id(self):
+    
+    def get_stock_id(self):
+        self.obj.execute("SELECT stock_id FROM stock_id")
+        return list(self.obj.fetchall())
 
 
 #save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas\stock_id.csv'
