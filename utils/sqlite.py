@@ -17,20 +17,29 @@ class database():
         else:
             df.to_sql(name=table_name, con=self.con, index=False, if_exists='append')
 
-    def check(self, table_name, col, value):
-        try:
-            self.obj.execute("SELECT * FROM {} where {} = {}".format(table_name, col, value))
-            if self.obj.fetchall():
-                return True
+    def insert_date_duplicate(self, df, table_name, unique_col):
+        for id in range(len(df)):
+            where = 'WHERE '
+            for i in unique_col:
+                where += str(i) + ' = ' + str(df.loc[id][i])
+                if unique_col.index(i) == len(unique_col) - 1:
+                    pass
+                else:
+                    where += ' AND '
+            self.obj.execute("SELECT * FROM {} {}".format(table_name, where))
+            if self.obj.fetchone():
+                break
             else:
-                return False
-        except Exception as e:
-            print(e)
+                continue
+        df = df.iloc[:id]
+        df = df.sort_values(by='date').reset_index(drop=True)
+        df.to_sql(name=table_name, con=self.con, index=False, if_exists='append')
+
     
     def undo(self, table_name, condition, where=''):
         where += 'WHERE '
         for i in condition:
-            where += str(i[0])+' = "'+str(i[1])+'"'
+            where += str(i[0]) + ' = ' + str(i[1])
             if condition.index(i) == len(condition)-1:
                 pass
             else:

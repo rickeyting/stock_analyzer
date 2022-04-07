@@ -6,6 +6,6 @@ DRIVER = os.path.join('.', 'chromedriver.exe')
 
 
 if __name__ == '__main__':
-    stock_id.update_stock_id(DRIVER, DB_DIR)
-    fundamental.run_crawler(DRIVER, DB_DIR)
-    banks_holder.run_crawler(DRIVER, DB_DIR)
+    #stock_id.update_stock_id(DRIVER, DB_DIR, False)
+    fundamental.crawl_fundamental(DRIVER, DB_DIR)
+    banks_holder.crawl_banks_holder(DRIVER, DB_DIR)

@@ -149,7 +149,7 @@ def get_data(browser, stock_id):
     return data, table_date
 
 
-def run_crawler(driver, db_dir, hide=True):
+def crawl_banks_holder(driver, db_dir, hide=True):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')

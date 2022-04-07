@@ -8,7 +8,7 @@ from utils.sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 save_path = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\data\stock_id.csv'
-db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
+db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas.db'
 
 def exist_path(browser, xpath):
     try:
@@ -18,7 +18,7 @@ def exist_path(browser, xpath):
         return False
 
 
-def update_stock_id(driver, db_dir, hide=True):
+def update_stock_id(driver, db_dir, hide=False):
     url = 'https://mops.twse.com.tw/mops/web/t51sb01'
     stock_status_xpath = '//*[@id="search"]/table/tbody/tr/td/select[1]'
     stokc_types = '//*[@id="search"]/table/tbody/tr/td/select[2]'
@@ -33,7 +33,7 @@ def update_stock_id(driver, db_dir, hide=True):
         result = []
         for status in ['上市', '上櫃']:
             Select(browser.find_element(By.XPATH, value=stock_status_xpath)).select_by_visible_text(status)
-            Select(browser.find_element(By.XPATH, value=stokc_types)).select_by_visible_text('') #select empty = all
+            Select(browser.find_element(By.XPATH, value=stokc_types)).select_by_visible_text('')
             browser.find_element(by=By.XPATH, value='//*[@id="search_bar1"]/div/input').click()
             time.sleep(15)
             html = browser.page_source

@@ -12,9 +12,10 @@ from selenium.webdriver.support.select import Select
 from utils.sqlite import database
 
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
-db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_data.db'
+db_dir = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\raw_datas.db'
 
-def run_crawler(driver, db_dir, hide=False):
+
+def crawl_fundamental(driver, db_dir, hide=True):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')
@@ -180,4 +181,4 @@ def get_y_q():
 
 
 if __name__ == '__main__':
-    run_crawler(driver, db_dir, False)
+    crawl_fundamental(driver, db_dir, False)
