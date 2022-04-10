@@ -42,7 +42,13 @@ def check_table_exist(table_name, engine=ENGINE):
         return False
 
 
-def init_local_dealer(path):
+#download from https://www.twse.com.tw/zh/brokerService/brokerServiceAudit loacte in folder data(rename 證券商代號 to bank)
+def update_banks_list(list_dir, table_name='bank_id', engine=ENGINE, table_yaml=TABLE_LIST):
+    df = pd.read_csv(list_dir)
+    db_insert_data(table_name, df, table_yaml=table_yaml)
+
+
+def init_local_dealer(path, table_yaml=TABLE_LIST):
     all_target = glob.glob(os.path.join(path, '**\*.csv'), recursive=True)
     for i in tqdm(all_target):
         date = i.split('\\')[-2]
@@ -54,7 +60,7 @@ def init_local_dealer(path):
         df['stock_id'] = stock_id
         df = df.dropna(axis=0, how='any', thresh=None, subset=None, inplace=False)
         if not df.empty:
-            db_insert_data('stock_local_dealer', df)
+            db_insert_data('stock_local_dealer', df, table_yaml=table_yaml)
 
 
 def db_insert_data(table_name, df, table_yaml=TABLE_LIST, engine=ENGINE):

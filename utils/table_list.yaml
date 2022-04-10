@@ -43,6 +43,15 @@ stock_id:
     上櫃日期: str
   primaries:
   - stock_id
+bank_id:
+  cols:
+    bank: str
+    證券商名稱: str
+    開業日: str
+    地址: str
+    電話: str
+  primaries:
+  - bank
 stock_price:
   cols:
     stock_id: str
