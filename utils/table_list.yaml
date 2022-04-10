@@ -1,0 +1,125 @@
+stock_id:
+  cols:
+    stock_id: str
+    market_type: str
+    公司名稱: str
+    公司簡稱: str
+    產業類別: str
+    外國企業註冊地國: str
+    住址: str
+    營利事業統一編號: str
+    董事長: str
+    總經理: str
+    發言人: str
+    發言人職稱: str
+    代理發言人: str
+    總機電話: str
+    成立日期: str
+    上市日期: str
+    普通股每股面額: str
+    實收資本額(元): str
+    已發行普通股數或TDR原發行股數: str
+    私募普通股(股): str
+    特別股(股): str
+    編製財務報告類型: str
+    普通股盈餘分派或虧損撥補頻率: str
+    普通股年度(含第4季或後半年度)現金股息及紅利決議層級: str
+    股票過戶機構: str
+    過戶電話: str
+    過戶地址: str
+    簽證會計師事務所: str
+    簽證會計師1: str
+    簽證會計師2: str
+    英文簡稱: str
+    英文通訊地址: str
+    傳真機號碼: str
+    電子郵件信箱: str
+    公司網址: str
+    投資人關係聯絡人: str
+    投資人關係聯絡人職稱: str
+    投資人關係聯絡電話: str
+    投資人關係聯絡電子郵件: str
+    公司網站內利害關係人專區網址: str
+    上櫃日期: str
+  primaries:
+  - stock_id
+stock_price:
+  cols:
+    stock_id: str
+    date: str
+    open: float
+    max: float
+    min: float
+    close: float
+    trading_turnover: int
+  primaries:
+  - stock_id
+  - date
+  check_key:
+  - stock_id
+  - date
+taiwanstockcashflows:
+  cols:
+    stock_id: str
+    year: int
+    quarter: int
+    elements: str
+    values: float
+  check_key:
+  - stock_id
+  - year
+  - quarter
+taiwanstockbalance:
+  cols:
+    stock_id: str
+    year: int
+    quarter: int
+    elements: str
+    values: float
+  check_key:
+  - stock_id
+  - year
+  - quarter
+taiwanstockfinancial:
+  cols:
+    stock_id: str
+    year: int
+    quarter: int
+    elements: str
+    values: float
+  check_key:
+  - stock_id
+  - year
+  - quarter
+stock_local_dealer:
+  cols:
+    stock_id: str
+    date: str
+    bank: str
+    order_num: int
+    price: float
+    buy_shares: int
+    sell_shares: int
+  primaries:
+  - stock_id
+  - date
+  - bank
+  - order_num
+  check_key:
+  - stock_id
+  - date
+temp:
+  cols:
+    stock_id: str
+    date: str
+    open: float
+    max: float
+    min: float
+    close: float
+    trading_turnover: int
+  primaries:
+  - stock_id
+  - date
+  check_key:
+  - stock_id
+  - date

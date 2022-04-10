@@ -1,17 +1,16 @@
-import os
 import time
 import base64
-import glob
 import pytesseract
-
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 import cv2
 from selenium import webdriver
 from datetime import datetime, timedelta
-from utils.sqlite import database
-
+from utils.postgredb import db_get_stock_id, db_insert_data, db_get_exist
+import os
+TABLE_LIST = os.path.join('..', 'table_list.yaml')
+driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 
 def preprocess(image_gray):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
@@ -98,6 +97,7 @@ def extract_data(soup):
     data = data[data['order'] != '序']
     data['order'] = data['order'].astype('int')
     data = data.sort_values(by='order')
+    data = data.rename(columns={'order': 'order_num'})
     data.reset_index(inplace=True, drop=True)
     return data
 
@@ -130,7 +130,7 @@ def get_data(browser, stock_id):
             print("{} Submit stock id {} and validation code {}: {}".format(current_time(), stock_id, text, check_text))
 
     if check_text == "查無資料":
-        return data, datetime.strftime(datetime.now(), '%Y%m%d')
+        return data
     DATA_URL = 'https://bsr.twse.com.tw/bshtm/bsContent.aspx?v=t'
     browser.get(DATA_URL)
     # print("{} stock id {} html page received".format(current_time(), stock_id))
@@ -146,28 +146,24 @@ def get_data(browser, stock_id):
     #data['date'] = table_date
     data['date'] = table_date
     data['stock_id'] = table_stock_id
-    return data, table_date
+    return data
 
 
-def crawl_banks_holder(driver, db_dir, hide=True):
+def crawl_banks_holder(driver, table_name='stock_local_dealer', hide=True, table_yaml=TABLE_LIST):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')
         options.add_argument("disable-gpu")
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
     chrome = webdriver.Chrome(executable_path=driver, options=options)
-    db = database(db_dir)
-    stock_id_list = db.get_stock_id()
+    stock_id_list = get_undo_stock(table_name, '2022-04-08', table_yaml=table_yaml)
     for i in range(len(stock_id_list)):
         code = stock_id_list[i]
         print("{} Download stock id {} data ({}/{})".format(current_time(), code, i + 1, len(stock_id_list)))
-        df, table_date = get_data(chrome, code)
+        df = get_data(chrome, code)
         if not df.empty:
-            if db.undo('banks_holder', [['date', table_date], ['stock_id', str(code)]]):
-                print('{} Data save at {}'.format(current_time(), code))
-                db.insert_data(df, 'banks_holder')
-            else:
-                print('{} {} stock id existed'.format(current_time(),code))
+            print('{} Data save at {}'.format(current_time(), code))
+            db_insert_data(table_name, df, table_yaml=table_yaml)
         else:
             print('{} No data found, invalid stock id.'.format(current_time()))
         time.sleep(1)
@@ -176,5 +172,13 @@ def crawl_banks_holder(driver, db_dir, hide=True):
     chrome.quit()
 
 
+def get_undo_stock(table_name,today=datetime.today().strftime('%Y-%m-%d'), table_yaml=TABLE_LIST):
+    stock_id_list = db_get_stock_id('sii')
+    result = db_get_exist(table_name, table_yaml=table_yaml)
+    done = [i[0] for i in result if i[1] == today]
+    result = list(set(stock_id_list) - set(done))
+    return result
+
+
 if __name__ == '__main__':
-    pass
+    crawl_banks_holder(driver)
