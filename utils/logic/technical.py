@@ -74,7 +74,7 @@ def TaiwanStockBIAS(stock_id, days=120):
     return result
 
 
-def TaiwanStockWilliams(stock_id, days=120):
+def TaiwanStockWIL(stock_id, days=120):
     df = get_price_info(stock_id, days)
     df['highest'] = df['max'].rolling(9, min_periods=9).max()
     df['lowest'] = df['min'].rolling(9, min_periods=9).min()
@@ -83,16 +83,25 @@ def TaiwanStockWilliams(stock_id, days=120):
     return result
 
 
-#https://investinganswers.com/dictionary/b/bullbear-ratio#:~:text=The%20bull%2Fbear%20ratio%20is%20calculated%20by%20dividing%20the,bullish%20respondents%20by%20the%20number%20of%20bearish%20respondents.?msclkid=7859657fb8d811ecaac9c6e09b27fa05
 def TaiwanStockBBI(stock_id, days=120):
     df = get_price_info(stock_id, days)
     df['mean3'] = df['close'].rolling(3, min_periods=3).mean()
     df['mean6'] = df['close'].rolling(6, min_periods=6).mean()
     df['mean12'] = df['close'].rolling(12, min_periods=12).mean()
     df['mean24'] = df['close'].rolling(24, min_periods=24).mean()
-    df['mean72'] = df['close'].rolling(72, min_periods=72).mean()
-    df['BBI24'] = (df['mean3'] + df['mean6'] + df['mean12'] + df['mean24'])/4
-    result = df[['stock_id', 'date', 'BBI24', 'mean3']]
+    df['BBI'] = (df['mean3'] + df['mean6'] + df['mean12'] + df['mean24'])/4
+    result = df[['stock_id', 'date', 'BBI']]
+    return result
+
+
+def TaiwanStockCDP(stock_id, days=120):
+    df = get_price_info(stock_id, days)
+    df['CDP'] = (df['close'] * 2 + df['max'] + df['min'])/4
+    df['AH'] = df['CDP'] + df['max'] - df['min']
+    df['NH'] = df['CDP'] * 2 - df['min']
+    df['NL'] = df['CDP'] * 2 - df['max']
+    df['AL'] = df['CDP'] - df['max'] + df['min']
+    result = df[['stock_id', 'date', 'CDP', 'AH', 'NH', 'NL', 'AL']]
     return result
 
 

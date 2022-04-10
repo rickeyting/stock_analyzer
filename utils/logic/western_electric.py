@@ -11,6 +11,8 @@ Two points above(3)/below(4) 2 sigma (three in two)
 Four out of five points above(5)/below(6) 1 sigma (five in four)
 Eight points in a row above(7)/below(8) the center line (nine in nine)
 '''
+#BBands
+
 
 def western_electric_test(df, col, term=30, sort_lable='date'):
     #mean_ok = round(df[col].mean(),2)
