@@ -1,7 +1,9 @@
+import os
+
 from utils.crawlers import banks_holder, fundamental, stock_price, stock_id
 from utils.postgredb import init_tables, update_banks_list
 from datetime import datetime, timedelta
-import os
+
 
 driver = os.path.abspath('chromedriver.exe')
 root = os.path.abspath('.')
@@ -26,6 +28,8 @@ def crawler_time_arrange(table_yaml=TABLE_LIST):
     print("{} CRAWLING PRICE DATA".format(current_time()))
     if weekday > 5:
         decrease = weekday - 4
+    else:
+        decrease = 0
     crawl_data = datetime.strftime(datetime.now() - timedelta(days=decrease), '%Y-%m-%d')
     stock_price.crawl_price(crawl_data, table_yaml=table_yaml)
     print("{} CRAWLING BANKS HOLDERS".format(current_time()))

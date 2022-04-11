@@ -6,8 +6,10 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-from utils.postgredb import db_get_stock_id, db_insert_data, db_get_exist
 import os
+
+from utils.postgredb import db_get_stock_id, db_insert_data, db_get_exist
+
 TABLE_LIST = os.path.join('..', 'table_list.yaml')
 driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
 
@@ -124,6 +126,7 @@ def TaiwanStockBalance(browser, stock_id, y, q):
             table['year'] = y
             table['quarter'] = q
             table['stock_id'] = stock_id
+            table['values'] = table['values'].fillna(-1)
             return table
         except Exception as e:
             time.sleep(15)
@@ -162,6 +165,7 @@ def TaiwanStockFinancial(browser, stock_id, y, q):
             table['year'] = y
             table['quarter'] = q
             table['stock_id'] = stock_id
+            table['values'] = table['values'].fillna(-1)
             return table
         except Exception as e:
             time.sleep(15)

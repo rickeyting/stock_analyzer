@@ -22,43 +22,47 @@ def western_electric_test(df, col, term=30, sort_lable='date'):
     df['sigma'] = df[col].rolling(term,min_periods=term).std()
     df['mid'] = df[col].mean()
     df['sigma'] = df[col].std()
-    df['result'] = ''
-    df.loc[df[col] >= df.mid + 3*df.sigma,'result'] += '1,'
-    df.loc[df[col] <= df.mid - 3*df.sigma,'result'] += '2,'
+
+    df.loc[df[col] >= df.mid + 3*df.sigma, 'predicted'] = 'sell'
+    df.loc[df[col] <= df.mid - 3*df.sigma, 'predicted'] = 'buy'
     
     df['temp'] = 0
     df.loc[df[col] >= df.mid + 2*df.sigma,'temp'] += 1
     df['temp'] = df['temp'].rolling(3,min_periods=3).sum()
-    df.loc[df.temp == 2,'result'] += '3,'
+    df.loc[df.temp == 2,'predicted'] = 'sell'
     df['temp'] = 0
     df.loc[df[col] <= df.mid - 2*df.sigma,'temp'] += 1
     df['temp'] = df['temp'].rolling(3,min_periods=3).sum()
-    df.loc[df.temp == 2,'result'] += '4,'
+    df.loc[df.temp == 2,'predicted'] = 'buy'
     
     df['temp'] = 0
     df.loc[df[col] >= df.mid + df.sigma,'temp'] += 1
     df['temp'] = df['temp'].rolling(5, min_periods=5).sum()
-    df.loc[df.temp == 4,'result'] += '5,'
+    df.loc[df.temp == 4,'predicted'] = 'sell'
     df['temp'] = 0
     df.loc[df[col] <= df.mid - df.sigma,'temp'] += 1
     df['temp'] = df['temp'].rolling(5, min_periods=5).sum()
-    df.loc[df.temp == 4,'result'] += '6,'
+    df.loc[df.temp == 4,'predicted'] = 'buy'
     
     df['temp'] = 0
     df.loc[df[col] >= df.mid,'temp'] += 1
     df['temp'] = df['temp'].rolling(9, min_periods=9).sum()
-    df.loc[df.temp == 9,'result'] += '7,'
+    df.loc[df.temp == 9,'predicted'] = 'sell'
     df['temp'] = 0
     df.loc[df[col] <= df.mid,'temp'] += 1
     df['temp'] = df['temp'].rolling(9, min_periods=9).sum()
-    df.loc[df.temp == 9, 'result'] += '8,'
+    df.loc[df.temp == 9, 'predicted'] = 'buy'
 
+
+
+    '''
     df['+sigma'] = df.mid + df.sigma
     df['-sigma'] = df.mid - df.sigma
     df['+2sigma'] = df.mid + 2*df.sigma
     df['-2sigma'] = df.mid - 2*df.sigma
     df['+3sigma'] = df.mid + 3*df.sigma
     df['-3sigma'] = df.mid - 3*df.sigma
+    
     df.plot(sort_lable,[col, 'mid', '+sigma', '-sigma', '+2sigma', '-2sigma', '+3sigma', '-3sigma'])
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
     df = df[df.result != '']
@@ -66,9 +70,9 @@ def western_electric_test(df, col, term=30, sort_lable='date'):
     for i, j in df[[sort_lable, col]].values.tolist():
         plt.scatter(i, j, color='red')
     plt.show()
+    '''
+
     
 
 
-df = pd.read_csv(r'C:\Users\mick7\PycharmProjects\New folder\test1.csv')
-df['date'] = df.index
-western_electric_test(df,'close')
+
