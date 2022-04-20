@@ -64,7 +64,7 @@ def init_local_dealer(path, table_yaml=TABLE_LIST):
 
 
 def db_insert_data(table_name, df, table_yaml=TABLE_LIST, engine=ENGINE):
-    if table_name == 'stock_id':
+    if table_name == 'stock_id' or table_name == 'local_dealer_special':
         if data_empty(table_name):
             df.to_sql("{}".format(table_name), engine, if_exists='append', index=False)
         else:
@@ -132,26 +132,48 @@ def db_get_stock_id(market_type='all', engine=ENGINE):
     return stock_list
 
 
-def db_get_exist(table_name, table_yaml=TABLE_LIST, engine=ENGINE):
+def db_get_bank_id(engine=ENGINE):
+    query = "SELECT bank FROM bank_id"
+    bank_list = engine.execute(query)
+    bank_list = [item[0] for item in bank_list]
+    return bank_list
+
+
+
+def db_get_exist(table_name, table_yaml=TABLE_LIST, engine=ENGINE, date=None):
     with open(table_yaml, 'r', encoding='utf-8-sig') as file:
         table_list = yaml.safe_load(file)
     check_key = table_list[table_name]['check_key']
     get_cols = ",".join(check_key)
     query = "SELECT {} FROM {}".format(get_cols, table_name)
+    if date:
+        query += " WHERE date = '{}'".format(date)
     result = engine.execute(query)
     result = list(dict.fromkeys(result))
     result = [item[:len(check_key)] for item in result]
     return result
 
 
+def get_init_date(table_name, function, engine=ENGINE):
+    if function == 'min':
+        query = "SELECT min(date) FROM {}".format(table_name)
+    elif function == 'max':
+        query = "SELECT max(date) FROM {}".format(table_name)
+    result = engine.execute(query)
+    result = [item[0] for item in result]
+    return result[0]
+
+
+
 def get_data(sql, engine=ENGINE):
-    result = pd.read_sql(sql,engine)
+    result = pd.read_sql(sql, engine)
     '''
     query = "SELECT * FROM {} WHERE date >= '{}'".format(table_name, date)
     result = engine.execute(query)
     result = [i for i in result]
     '''
     return result
+
 #fundamental_get_exist('taiwanstockcashflows')
 #get_stock_id()
 #init_local_dealer(r'C:\Users\mick7\PycharmProjects\twse-captcha-breaker\stock_local_dealer')

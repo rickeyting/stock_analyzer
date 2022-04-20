@@ -117,6 +117,39 @@ stock_local_dealer:
   check_key:
   - stock_id
   - date
+analyze_technical:
+  cols:
+    function: str
+    date: str
+    earn: int
+    neutral: int
+    loss: int
+  primaries:
+  - function
+  - date
+analyze_local_dealer:
+  cols:
+    bank: str
+    stock_id: str
+    date: str
+    earn: int
+    neural: int
+    loss: int
+  primaries:
+  - bank
+  - stock_id
+local_dealer_special:
+  cols:
+    bank: str
+    stock_id: str
+    date: str
+    shares: int
+    high: int
+    current: int
+    banks_special: str
+  primaries:
+  - bank
+  - stock_id
 temp:
   cols:
     stock_id: str

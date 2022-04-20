@@ -149,14 +149,14 @@ def get_data(browser, stock_id):
     return data
 
 
-def crawl_banks_holder(driver, table_name='stock_local_dealer', hide=True, table_yaml=TABLE_LIST):
+def crawl_banks_holder(driver, date, table_name='stock_local_dealer', hide=True, table_yaml=TABLE_LIST):
     options = webdriver.ChromeOptions()
     if hide:
         options.add_argument('headless')
         options.add_argument("disable-gpu")
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
     chrome = webdriver.Chrome(executable_path=driver, options=options)
-    stock_id_list = get_undo_stock(table_name, '2022-04-08', table_yaml=table_yaml)
+    stock_id_list = get_undo_stock(table_name, today=date, table_yaml=table_yaml)
     for i in range(len(stock_id_list)):
         code = stock_id_list[i]
         print("{} Download stock id {} data ({}/{})".format(current_time(), code, i + 1, len(stock_id_list)))
@@ -172,10 +172,10 @@ def crawl_banks_holder(driver, table_name='stock_local_dealer', hide=True, table
     chrome.quit()
 
 
-def get_undo_stock(table_name,today=datetime.today().strftime('%Y-%m-%d'), table_yaml=TABLE_LIST):
+def get_undo_stock(table_name, today=datetime.today().strftime('%Y-%m-%d'), table_yaml=TABLE_LIST):
     stock_id_list = db_get_stock_id('sii')
-    result = db_get_exist(table_name, table_yaml=table_yaml)
-    done = [i[0] for i in result if i[1] == today]
+    result = db_get_exist(table_name, table_yaml=table_yaml, date=today)
+    done = [i[0] for i in result]
     result = list(set(stock_id_list) - set(done))
     return result
 
