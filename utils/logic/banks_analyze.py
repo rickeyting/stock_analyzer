@@ -282,7 +282,42 @@ def summary_test():
     result = [sum(x) for x in zip(*final)]
     print(result)
 
-
+    
+def summary_local_dealer():
+    stock_list = db_get_stock_id(market_type='sii')
+    result = []
+    for i in tqdm(stock_list):
+        query = "SELECT * FROM stock_local_dealer WHERE stock_id = '{}'".format(i)
+        df = get_data(query)
+        if not df.empty:
+            df['bank'] = df['bank'].str[:4]
+            df['shares'] = df.buy_shares - df.sell_shares
+            df['total_price'] = df.price * df.total_shares
+            df = df.groupby(['date', 'bank', 'stock_id']).sum().reset_index()
+            df['price'] = df.total_price / df.shares
+            df = df[['date', 'bank', 'stock_id', 'price', 'shares', 'total_price']]
+            df = df.sort_values(by='date')
+            df['sold_price'] = 0
+            df.loc[df.total_price < 0, 'sold_price'] =  df.loc[df.total_price < 0, 'price']
+            df.loc[df.total_price < 0, 'price'] = None
+            for b_id, s_id in df[['bank', 'stock_id']].values.tolist():
+                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id) ,'price'].ffill()
+                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'total_price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id), 'price'] * df.loc[(df.bank == b_id) & (df.s_id == s_id), 'share']
+                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'sum_price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id), 'total_price'].cumsum()
+            df.loc[df.total_price < 0, 'earn_rate'] =  (df.loc[df.total_price < 0, 'sold_price'] - df.loc[df.total_price < 0, 'price']) / df.loc[df.total_price < 0, 'price']
+            df.loc[df.total_price < 0, 'earn_price'] =  (df.loc[df.total_price < 0, 'price'] - df.loc[df.total_price < 0, 'sold_price']) * df.loc[df.total_price < 0, 'share']
+            result.append(df)
+    result = pd.concat(result)
+    result.to_csv(r'C:\Users\mick7\Downloads\share_holder_all.csv')
+    #result.read_csv(r'C:\Users\mick7\Downloads\share_holder_all.csv')
+    limit = 5e6
+    result.loc[result.earn_price >= limit, 'earn'] = 1
+    result.loc[(result.earn_price < limit) & (result.earn_price > 0), 'neutral'] = 1
+    result.loc[result.earn_price <= 0, 'loss'] = 1
+    result = result.groupby(['bank', 'stock_id']).agg({'earn_rate': 'mean', 'earn_price': 'sum', 'earn': 'sum', 'neutral': 'sum', 'loss': 'sum'})
+    result.to_csv(r'C:\Users\mick7\Downloads\share_holder_result.csv')
+    
+    
 if __name__ == '__main__':
     #update_local_dealer()
     #daily_special_result1()
