@@ -26,7 +26,7 @@ def TaiwanStockPrice(stock_id):
     if not result.empty:
         result.columns = ['date', 'open', 'max', 'min', 'close', 'trading_turnover']
         result['stock_id'] = stock_id
-    result['date'] = pd.to_datetime(result['date'],format='%Y%m%d')
+    result['date'] = pd.to_datetime(result['date'], format='%Y%m%d')
     result['date'] = result['date'].dt.strftime('%Y-%m-%d')
     return result
 

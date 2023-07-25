@@ -1,7 +1,8 @@
 import os
+import time
 
 from utils.crawlers import banks_holder, fundamental, stock_price, stock_id
-from utils.postgredb import init_tables, update_banks_list
+from utils.postgredb import init_tables, update_banks_list, export_all
 from datetime import datetime, timedelta
 
 
@@ -24,7 +25,7 @@ def crawler_time_arrange(table_yaml=TABLE_LIST):
 
     if weekday > 5:
         print("{} CRAWLING FUNDAMENTAL DATA".format(current_time()))
-        fundamental.crawl_fundamental(driver, table_yaml=table_yaml)
+        #fundamental.crawl_fundamental(driver, table_yaml=table_yaml)
 
     print("{} CRAWLING PRICE DATA".format(current_time()))
 
@@ -34,10 +35,19 @@ def crawler_time_arrange(table_yaml=TABLE_LIST):
         decrease = 0
 
     crawl_data = datetime.strftime(datetime.now() - timedelta(days=decrease), '%Y-%m-%d')
-    stock_price.crawl_price(crawl_data, table_yaml=table_yaml)
-    print("{} CRAWLING BANKS HOLDERS".format(current_time()))
-    banks_holder.crawl_banks_holder(driver, date=crawl_data, table_yaml=table_yaml)
 
+
+    print("{} CRAWLING BANKS HOLDERS".format(current_time()))
+    #time.sleep(18000)
+    #banks_holder.crawl_banks_holder(driver, date=crawl_data, table_yaml=table_yaml)
+    while True:
+        try:
+            stock_price.crawl_price(crawl_data, table_yaml=table_yaml)
+            banks_holder.crawl_banks_holder(driver, date=crawl_data, table_yaml=table_yaml)
+            break
+        except:
+            pass
+    export_all(status='tracing')
 
 if __name__ == '__main__':
     #fundamental.crawl_fundamental(driver, table_yaml=TABLE_LIST)

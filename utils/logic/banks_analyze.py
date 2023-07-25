@@ -8,6 +8,8 @@ from tqdm import tqdm
 from utils.backtesting import trace_back
 from utils.postgredb import db_get_stock_id, get_data, db_insert_data, get_init_date
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 LOCAL_DEALER_YAML = r'C:\Users\mick7\PycharmProjects\stock_analyzer\New folder\stock_analyzer\utils\logic\local_dealer.yaml'
 TABLE_LIST = os.path.join('..', 'table_list.yaml')
@@ -283,45 +285,64 @@ def summary_test():
     print(result)
 
     
-def summary_local_dealer():
+def summary_local_dealer(table_yaml=TABLE_LIST):
     stock_list = db_get_stock_id(market_type='sii')
-    result = []
     for i in tqdm(stock_list):
         query = "SELECT * FROM stock_local_dealer WHERE stock_id = '{}'".format(i)
         df = get_data(query)
         if not df.empty:
             df['bank'] = df['bank'].str[:4]
             df['shares'] = df.buy_shares - df.sell_shares
-            df['total_price'] = df.price * df.total_shares
+            df['buy_price'] = df.price * df.buy_shares
+            df['sell_price'] = df.price * df.sell_shares
             df = df.groupby(['date', 'bank', 'stock_id']).sum().reset_index()
-            df['price'] = df.total_price / df.shares
-            df = df[['date', 'bank', 'stock_id', 'price', 'shares', 'total_price']]
+            df['buy_price'] = df.buy_price / df.buy_shares
+            df['buy_price'] = df.buy_price.round(2)
+            df['sell_price'] = df.sell_price / df.sell_shares
+            df['sell_price'] = df.sell_price.round(2)
+            df = df[['date', 'bank', 'stock_id', 'buy_price', 'sell_price', 'shares']]
             df = df.sort_values(by='date')
-            df['sold_price'] = 0
-            df.loc[df.total_price < 0, 'sold_price'] =  df.loc[df.total_price < 0, 'price']
-            df.loc[df.total_price < 0, 'price'] = None
-            for b_id, s_id in df[['bank', 'stock_id']].values.tolist():
-                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id) ,'price'].ffill()
-                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'total_price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id), 'price'] * df.loc[(df.bank == b_id) & (df.s_id == s_id), 'share']
-                df.loc[(df.bank == b_id) & (df.s_id == s_id), 'sum_price'] = df.loc[(df.bank == b_id) & (df.s_id == s_id), 'total_price'].cumsum()
-            df.loc[df.total_price < 0, 'earn_rate'] =  (df.loc[df.total_price < 0, 'sold_price'] - df.loc[df.total_price < 0, 'price']) / df.loc[df.total_price < 0, 'price']
-            df.loc[df.total_price < 0, 'earn_price'] =  (df.loc[df.total_price < 0, 'price'] - df.loc[df.total_price < 0, 'sold_price']) * df.loc[df.total_price < 0, 'share']
-            result.append(df)
-    result = pd.concat(result)
-    result.to_csv(r'C:\Users\mick7\Downloads\share_holder_all.csv')
+            df = df.fillna('NULL')
+            #df.loc[df.shares < 0, 'buy_price'] = None
+            '''
+            bank_list = [b[0] for b in df[['bank']].values.tolist()]
+            for b_id in tqdm(list(dict.fromkeys(bank_list))):
+                df.loc[df.bank == b_id, 'buy_price'] = df.loc[df.bank == b_id, 'buy_price'].ffill()
+                skip_first = len(df.loc[df.bank == b_id, 'date'])
+                for d_id in df.loc[df.bank == b_id, 'date']:
+                    if skip_first == len(df.loc[df.bank == b_id, 'date']):
+                        skip_first -= 1
+                        continue
+                    if np.all(df.loc[(df.bank == b_id) & (df.date == d_id), 'shares'] < 0):
+                        df.loc[(df.bank == b_id) & (df.date == d_id), 'shares'] = df.loc[(df.bank == b_id) & (df.date == d_id), 'shares'] if df.loc[(df.bank == b_id) & (df.date <= d_id), 'shares'].sum() > 0 else df.loc[(df.bank == b_id) & (df.date < d_id), 'shares'].sum() * -1
+                        df.loc[(df.bank == b_id) & (df.date == d_id), 'buy_price'] = np.sum(df.loc[(df.bank == b_id) & (df.date < d_id), 'buy_price'] * df.loc[(df.bank == b_id) & (df.date < d_id), 'shares']) / df.loc[(df.bank == b_id) & (df.date < d_id), 'shares'].sum()
+                df.loc[df.bank == b_id, 'total_price'] = df.loc[df.bank == b_id, 'buy_price'] * df.loc[df.bank == b_id, 'shares']
+                df.loc[df.bank == b_id, 'sum_shares'] = df.loc[df.bank == b_id, 'shares'].cumsum()
+                df.loc[df.bank == b_id, 'sum_price'] = df.loc[df.bank == b_id, 'total_price'].cumsum()
+            df.loc[df.shares < 0, 'earn_rate'] = (df.loc[df.shares < 0, 'sell_price'] - df.loc[df.shares < 0, 'buy_price']) / df.loc[df.shares < 0, 'buy_price']
+            df.loc[df.shares < 0, 'earn_price'] = (df.loc[df.shares < 0, 'sell_price'] - df.loc[df.shares < 0, 'buy_price']) * df.loc[df.shares < 0, 'shares'] * -1
+            '''
+            db_insert_data('local_holder_all', df, table_yaml=table_yaml)
+
+
+
+    #result.to_csv(r'C:\Users\mick7\Downloads\share_holder_all.csv')
     #result.read_csv(r'C:\Users\mick7\Downloads\share_holder_all.csv')
-    limit = 5e6
-    result.loc[result.earn_price >= limit, 'earn'] = 1
-    result.loc[(result.earn_price < limit) & (result.earn_price > 0), 'neutral'] = 1
-    result.loc[result.earn_price <= 0, 'loss'] = 1
-    result = result.groupby(['bank', 'stock_id']).agg({'earn_rate': 'mean', 'earn_price': 'sum', 'earn': 'sum', 'neutral': 'sum', 'loss': 'sum'})
-    result.to_csv(r'C:\Users\mick7\Downloads\share_holder_result.csv')
-    
+    '''
+    limit = 0.03
+    result.loc[result.earn_rate >= limit, 'earn'] = 1
+    result.loc[(result.earn_rate < limit) & (result.earn_rate > 0), 'neutral'] = 1
+    result.loc[result.earn_rate <= 0, 'loss'] = 1
+    result = result.groupby(['bank', 'stock_id']).agg({'earn_rate': 'mean', 'earn_price': 'sum', 'earn': 'sum', 'neutral': 'sum', 'loss': 'sum'}).reset_index()
+    db_insert_data('local_holder_result', result, table_yaml=table_yaml)
+    '''
+    # result.to_csv(r'C:\Users\mick7\Downloads\share_holder_result.csv')
     
 if __name__ == '__main__':
     #update_local_dealer()
     #daily_special_result1()
     #daily_banks_result()
     #daily_industry_result()
-    get_sum()
+    #get_sum()
     #df = df[['buy', 'sell']]
+    summary_local_dealer()

@@ -8,9 +8,13 @@ import cv2
 from selenium import webdriver
 from datetime import datetime, timedelta
 from utils.postgredb import db_get_stock_id, db_insert_data, db_get_exist
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import os
 TABLE_LIST = os.path.join('..', 'table_list.yaml')
-driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\stock_analyzer\chromedriver.exe'
+driver = r'C:\Users\mick7\PycharmProjects\stock_analyzer\New folder\stock_analyzer\chromedriver.exe'
 
 def preprocess(image_gray):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
@@ -163,6 +167,7 @@ def crawl_banks_holder(driver, date, table_name='stock_local_dealer', hide=True,
         df = get_data(chrome, code)
         if not df.empty:
             print('{} Data save at {}'.format(current_time(), code))
+            df.fillna(0)
             db_insert_data(table_name, df, table_yaml=table_yaml)
         else:
             print('{} No data found, invalid stock id.'.format(current_time()))
@@ -180,5 +185,69 @@ def get_undo_stock(table_name, today=datetime.today().strftime('%Y-%m-%d'), tabl
     return result
 
 
+def get_stocks_base_info(browser):
+    stock_ids = db_get_stock_id('all')
+    options = webdriver.ChromeOptions()
+    options.add_argument('headless')
+    options.add_argument("disable-gpu")
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    chrome = webdriver.Chrome(executable_path=browser, options=options)
+
+    data_list = []  # list to hold all data dictionaries
+
+    for stock_id in stock_ids:
+        POST_URL = 'https://www.stockinfo.tw/basicInfo/?stockSearch={}'.format(stock_id)  # use the current stock_id
+
+        while True:  # Loop until the page is loaded or timeout limit is reached
+            try:
+                print(f"Processing ID: {stock_id}")
+                chrome.get(POST_URL)
+                WebDriverWait(chrome, 30).until(
+                    EC.presence_of_element_located((By.TAG_NAME, 'tbody')))  # wait for the 'tbody' tag to be loaded
+                break  # If the page has been successfully loaded, break the loop
+            except TimeoutException:
+                print("TimeoutException occurred, retrying...")
+                chrome.close()
+                chrome.quit()
+                chrome = webdriver.Chrome(executable_path=browser, options=options)
+                continue  # If the page hasn't loaded in 30 seconds, try to load it again
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+                break
+
+        html = chrome.page_source
+        soup = BeautifulSoup(html, 'html.parser')
+
+        table = soup.find('table', {'class': 'table table-bordered'})
+        try:
+            rows = table.find('tbody').find_all('tr')
+            data_dict = {}
+            for row in rows[1:]:
+                cols = row.find_all('td')
+                data_dict[cols[0].text] = cols[1].text
+            data_list.append(data_dict)
+        except AttributeError:
+            continue
+
+        time.sleep(1)
+
+    # Convert data_list to DataFrame
+    df = pd.DataFrame(data_list)
+    print(df)
+    # Read existing data
+    try:
+        exist_df = pd.read_csv('base_data.csv')
+    except FileNotFoundError:
+        exist_df = pd.DataFrame()
+
+    # Combine df and exist_df, and remove duplicates
+    final_df = pd.concat([df, exist_df], ignore_index=True).drop_duplicates(subset=['股票代號'], keep='last')
+
+    # Write final_df to csv
+    final_df.to_csv('base_data.csv', index=False, encoding='utf-8-sig')
+    chrome.close()
+    chrome.quit()
+
 if __name__ == '__main__':
-    crawl_banks_holder(driver)
+    get_stocks_base_info(driver)
+    #crawl_banks_holder(driver)

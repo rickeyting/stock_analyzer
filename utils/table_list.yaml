@@ -150,6 +150,30 @@ local_dealer_special:
   primaries:
   - bank
   - stock_id
+local_holder_all:
+  cols:
+    bank: str
+    stock_id: str
+    date: str
+    shares: int
+    buy_price: float
+    sell_price: float
+  primaries:
+  - bank
+  - stock_id
+  - date
+local_holder_result:
+  cols:
+    bank: str
+    stock_id: str
+    earn_rate: float
+    earn_price: float
+    earn: int
+    neutral: int
+    loss: int
+  primaries:
+  - bank
+  - stock_id
 temp:
   cols:
     stock_id: str
